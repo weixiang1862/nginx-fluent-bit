@@ -1,0 +1,31 @@
+version: "3"
+
+networks:
+  lal-test:
+
+services:
+  nginx:
+    image: nginx:1.25.3
+    ports:
+      - "80:80"
+    volumes:
+      - /var/log/nginx:/var/log/nginx
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    networks:
+      - lal-test
+    healthcheck:
+      test: ["CMD", "bash", "-c", "cat < /dev/null > /dev/tcp/127.0.0.1/80"]
+      interval: 5s
+      timeout: 60s
+      retries: 120
+  fluent-bit:
+    image: fluent/fluent-bit:1.7
+    volumes:
+      - /var/log/nginx:/var/log/nginx
+      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./fluent-bit-script.lua:/fluent-bit/etc/fluent-bit-script.lua
+    networks:
+      - lal-test
+    depends_on:
+      nginx:
+        condition: service_healthy
